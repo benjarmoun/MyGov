@@ -1,24 +1,36 @@
 package com.mygov.justice.controllers;
 
 import com.mygov.justice.dto.TransactionRequest;
+import com.mygov.justice.entyties.Transaction;
 import com.mygov.justice.services.TransactionService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDate;
 
 @Slf4j
 @RestController
-@RequestMapping("transaction")
+@RequestMapping("jus/transaction")
 @AllArgsConstructor
-public class TransactionController {
+public record TransactionController(TransactionService transactionService, RestTemplate restTemplate) {
 
-    private final TransactionService transactionService;
     @PostMapping
-    public void registerCustomer(@RequestBody TransactionRequest transactionRequest) {
+    ResponseEntity<String> registerCustomer(@RequestBody TransactionRequest request) {
 //        log.info("new transaction registration {}", transactionRequest);
-        transactionService.addTransaction(transactionRequest);
+        transactionService.addTransaction(request);
+        Transaction transaction = new Transaction();
+        transaction.setNom(request.nom());
+        transaction.setDescription(request.description());
+        transaction.setMinistere(request.ministere());
+        transaction.setDate(LocalDate.now());
+        return ResponseEntity.ok().body(restTemplate.postForObject("http://FINANCE/fin/transaction", transaction, String.class));
+    }
+
+    @GetMapping
+    ResponseEntity get(){
+        return ResponseEntity.ok().body(restTemplate.getForObject("http://FINANCE/fin/transaction", String.class));
     }
 }
